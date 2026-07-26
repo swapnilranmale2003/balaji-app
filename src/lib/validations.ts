@@ -42,6 +42,36 @@ export const incomeSchema = z.object({
   date: dateString,
 });
 
+/** An optional `yyyy-MM-dd`; empty string means "not set". */
+const optionalDateString = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value), {
+    message: "Use the date picker to choose a valid date",
+  })
+  .default("");
+
+export const tripSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Trip name must be at least 2 characters")
+      .max(80, "Trip name must be 80 characters or fewer"),
+    description: z
+      .string()
+      .trim()
+      .max(300, "Description must be 300 characters or fewer")
+      .default(""),
+    startDate: optionalDateString,
+    endDate: optionalDateString,
+  })
+  .refine(
+    (data) =>
+      !data.startDate || !data.endDate || data.startDate <= data.endDate,
+    { message: "End date cannot be before the start date", path: ["endDate"] },
+  );
+
 export const expenseSchema = z.object({
   title: z
     .string()
@@ -58,11 +88,15 @@ export const expenseSchema = z.object({
   }),
   amount,
   date: dateString,
+  // Empty string is what an unselected <Select> submits; both it and undefined
+  // mean "no trip", and the action normalises them to null.
+  tripId: z.string().trim().optional().default(""),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type IncomeInput = z.infer<typeof incomeSchema>;
 export type ExpenseInput = z.infer<typeof expenseSchema>;
+export type TripInput = z.infer<typeof tripSchema>;
 
 /** Shape returned by every server action, so forms can handle results uniformly. */
 export type ActionResult<T = void> =

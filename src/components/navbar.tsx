@@ -9,13 +9,14 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  MapPin,
   Menu,
   Wallet,
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -35,6 +36,13 @@ const ADMIN_LINKS: NavLink[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/income", label: "Income", icon: ArrowDownCircle },
   { href: "/admin/expenses", label: "Expenses", icon: ArrowUpCircle },
+  { href: "/admin/trips", label: "Trips", icon: MapPin },
+];
+
+/** Shown to everyone, signed in or not. */
+const PUBLIC_LINKS: NavLink[] = [
+  { href: "/", label: "Public View", icon: LayoutDashboard },
+  { href: "/trips", label: "Trips", icon: MapPin },
 ];
 
 export function Navbar({ isAdmin }: { isAdmin: boolean }) {
@@ -57,15 +65,20 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 md:flex">
-          <Link
-            href="/"
-            className={cn(
-              "hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              pathname === "/" ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-            )}
-          >
-            Public View
-          </Link>
+          {PUBLIC_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                (href === "/" ? pathname === "/" : pathname.startsWith(href))
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              {label}
+            </Link>
+          ))}
           {links.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -95,10 +108,13 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
                 </Button>
               </form>
             ) : (
-              <Button render={<Link href="/login" />} size="sm">
+              <Link
+                href="/login"
+                className={cn(buttonVariants({ size: "sm" }))}
+              >
                 <LogIn className="size-4" />
                 Admin Login
-              </Button>
+              </Link>
             )}
           </div>
 
@@ -124,16 +140,21 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
               </SheetHeader>
 
               <nav className="grid gap-1 px-4">
-                <Link
-                  href="/"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "hover:bg-accent rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                    pathname === "/" && "bg-accent",
-                  )}
-                >
-                  Public View
-                </Link>
+                {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "hover:bg-accent flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                      (href === "/" ? pathname === "/" : pathname.startsWith(href)) &&
+                        "bg-accent",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </Link>
+                ))}
                 {links.map(({ href, label, icon: Icon }) => (
                   <Link
                     key={href}
@@ -159,13 +180,14 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
                     </Button>
                   </form>
                 ) : (
-                  <Button
-                    render={<Link href="/login" onClick={() => setOpen(false)} />}
-                    className="w-full"
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className={cn(buttonVariants(), "w-full")}
                   >
                     <LogIn className="size-4" />
                     Admin Login
-                  </Button>
+                  </Link>
                 )}
               </div>
             </SheetContent>

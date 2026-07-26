@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  MapPin,
   MoreHorizontal,
   Pencil,
   Search,
@@ -61,9 +62,18 @@ type ExpenseTableProps = {
   /** When provided, an actions column with edit/delete is rendered. */
   onEdit?: (expense: ExpenseRecord) => void;
   onDelete?: (expense: ExpenseRecord) => void;
+  /** Hidden when the table already sits inside a single trip's page. */
+  showTripColumn?: boolean;
+  title?: string;
 };
 
-export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) {
+export function ExpenseTable({
+  expenses,
+  onEdit,
+  onDelete,
+  showTripColumn = true,
+  title = "Expense History",
+}: ExpenseTableProps) {
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState<string>(ALL_CATEGORIES);
   const [sortDesc, setSortDesc] = React.useState(true);
@@ -85,6 +95,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
         expense.title.toLowerCase().includes(needle) ||
         expense.description.toLowerCase().includes(needle) ||
         expense.category.toLowerCase().includes(needle) ||
+        (expense.tripName?.toLowerCase().includes(needle) ?? false) ||
         String(expense.amount).includes(needle)
       );
     });
@@ -112,11 +123,12 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
 
   const handleExport = () => {
     const csv = toCsv(
-      ["Date", "Expense Name", "Category", "Description", "Amount (INR)"],
+      ["Date", "Expense Name", "Category", "Trip", "Description", "Amount (INR)"],
       filtered.map((expense) => [
         toDateInputValue(expense.date),
         expense.title,
         expense.category,
+        expense.tripName ?? "",
         expense.description,
         expense.amount,
       ]),
@@ -130,7 +142,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
       <CardHeader className="gap-4">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>
-            <CardTitle>Expense History</CardTitle>
+            <CardTitle>{title}</CardTitle>
             <CardDescription>
               {filtered.length} of {expenses.length}{" "}
               {expenses.length === 1 ? "expense" : "expenses"} ·{" "}
@@ -158,7 +170,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by name, description or amount…"
+              placeholder="Search by name, trip, description or amount…"
               className="pl-9"
               aria-label="Search expenses"
             />
@@ -209,6 +221,9 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
                 </TableHead>
                 <TableHead className="min-w-[9rem]">Expense Name</TableHead>
                 <TableHead className="min-w-[8rem]">Category</TableHead>
+                {showTripColumn && (
+                  <TableHead className="min-w-[8rem]">Trip</TableHead>
+                )}
                 <TableHead className="min-w-[12rem]">Description</TableHead>
                 <TableHead className="min-w-[7rem] text-right">Amount</TableHead>
                 {showActions && (
@@ -223,7 +238,7 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
               {paginated.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={showActions ? 6 : 5}
+                    colSpan={(showTripColumn ? 6 : 5) + (showActions ? 1 : 0)}
                     className="text-muted-foreground h-32 text-center"
                   >
                     {expenses.length === 0
@@ -251,6 +266,18 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
                           {expense.category}
                         </Badge>
                       </TableCell>
+                      {showTripColumn && (
+                        <TableCell className="text-muted-foreground">
+                          {expense.tripName ? (
+                            <Badge variant="outline" className="gap-1 font-normal">
+                              <MapPin className="size-3" />
+                              {expense.tripName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="text-muted-foreground max-w-xs">
                         <span className="line-clamp-2">
                           {expense.description || "—"}

@@ -17,6 +17,7 @@ import {
   getMonthlySummary,
   getRecentTransactions,
   getSummary,
+  getTripOptions,
 } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -49,7 +50,9 @@ async function TransactionsSection() {
   return <RecentTransactions transactions={transactions} />;
 }
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const trips = await getTripOptions();
+
   return (
     <>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -61,7 +64,7 @@ export default function AdminDashboardPage() {
             Manage the team fund — record what comes in and what goes out.
           </p>
         </div>
-        <QuickActions />
+        <QuickActions trips={trips} />
       </div>
 
       <Suspense fallback={<DashboardCardsSkeleton />}>

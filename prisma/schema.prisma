@@ -21,6 +21,20 @@ model Income {
   @@index([date])
 }
 
+model Trip {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String    @default("")
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  expenses Expense[]
+
+  @@index([startDate])
+}
+
 model Expense {
   id          String   @id @default(cuid())
   title       String
@@ -31,6 +45,13 @@ model Expense {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Optional: not every expense belongs to a trip (general team costs), and
+  // expenses recorded before trips existed have none. Deleting a trip clears
+  // this rather than deleting the expense — the money was still spent.
+  tripId String?
+  trip   Trip?   @relation(fields: [tripId], references: [id], onDelete: SetNull)
+
   @@index([date])
   @@index([category])
+  @@index([tripId])
 }

@@ -5,7 +5,8 @@ much has been collected, what it was spent on, and what is left. A single admin
 account manages the entries.
 
 - **Public** (`/`) — summary cards, charts, and a searchable expense history. No login.
-- **Admin** (`/admin`) — full create / edit / delete for income and expenses.
+- **Trips** (`/trips`) — expenses grouped by trip, with each trip's total. No login.
+- **Admin** (`/admin`) — full create / edit / delete for income, expenses, and trips.
 
 The remaining balance is never stored. It is always computed as
 `Total Received − Total Expenses`.
@@ -132,7 +133,7 @@ PostgreSQL:
 
 ```
 prisma/
-  schema.prisma          Income and Expense models
+  schema.prisma          Trip, Income and Expense models
   seed.ts                Sample data
 
 src/
@@ -143,6 +144,10 @@ src/
       page.tsx           Admin dashboard
       income/            Income management
       expenses/          Expense management
+      trips/             Trip management
+    trips/
+      page.tsx           Public trip list
+      [id]/              Public trip detail
     actions/             Server Actions (auth, income, expense)
     error.tsx            Error boundary
     not-found.tsx        404
@@ -152,6 +157,7 @@ src/
     expense-table.tsx    Search / filter / sort / paginate / export
     income-dialog.tsx    Create and edit income
     expense-dialog.tsx   Create and edit expenses
+    trip-dialog.tsx      Create and edit trips
     delete-dialog.tsx    Delete confirmation
     summary-charts.tsx   Monthly and category charts
     navbar.tsx           Header with mobile sheet menu
@@ -172,6 +178,15 @@ src/
 ---
 
 ## Features
+
+**Trips**
+- Admin creates a trip (name, description, optional start and end dates)
+- Each expense can be assigned to a trip when it is added or edited
+- Public visitors browse `/trips` and drill into any trip to see its expenses
+  and total
+- Trip names are unique
+- Deleting a trip keeps its expenses — they simply lose the trip label, so the
+  team totals never change
 
 **Public view**
 - Total Received, Total Expense, Remaining Balance, Total Transactions

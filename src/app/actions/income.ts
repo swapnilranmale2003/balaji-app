@@ -10,9 +10,11 @@ import { incomeSchema, type ActionResult } from "@/lib/validations";
 /** Refreshes every route whose numbers depend on the ledger. */
 function revalidateLedger() {
   revalidatePath("/");
+  revalidatePath("/trips", "layout");
   revalidatePath("/admin");
   revalidatePath("/admin/income");
   revalidatePath("/admin/expenses");
+  revalidatePath("/admin/trips");
 }
 
 export async function createIncome(values: unknown): Promise<ActionResult<null>> {

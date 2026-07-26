@@ -11,7 +11,13 @@ import { Button } from "@/components/ui/button";
 import type { ExpenseRecord } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
-export function ExpenseManager({ expenses }: { expenses: ExpenseRecord[] }) {
+export function ExpenseManager({
+  expenses,
+  trips,
+}: {
+  expenses: ExpenseRecord[];
+  trips: { id: string; name: string }[];
+}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<ExpenseRecord | null>(null);
   const [pendingDelete, setPendingDelete] =
@@ -54,6 +60,7 @@ export function ExpenseManager({ expenses }: { expenses: ExpenseRecord[] }) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         expense={editing}
+        trips={trips}
       />
 
       <DeleteDialog

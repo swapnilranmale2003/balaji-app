@@ -38,17 +38,26 @@ import type { ExpenseRecord } from "@/lib/data";
 import { toDateInputValue } from "@/lib/utils";
 import { expenseSchema, type ExpenseInput } from "@/lib/validations";
 
+/** Sentinel for "not part of a trip" — Select cannot hold an empty value. */
+const NO_TRIP = "__none__";
+
 type ExpenseDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present when editing; omitted when adding. */
   expense?: ExpenseRecord | null;
+  /** Trips available to attach this expense to. */
+  trips?: { id: string; name: string }[];
+  /** Preselects a trip, used when adding from a trip's own page. */
+  defaultTripId?: string;
 };
 
 export function ExpenseDialog({
   open,
   onOpenChange,
   expense,
+  trips = [],
+  defaultTripId,
 }: ExpenseDialogProps) {
   const isEditing = Boolean(expense);
 
@@ -60,6 +69,7 @@ export function ExpenseDialog({
       category: "Food",
       amount: 0,
       date: toDateInputValue(new Date()),
+      tripId: "",
     },
   });
 
@@ -76,6 +86,7 @@ export function ExpenseDialog({
             category: expense.category as ExpenseInput["category"],
             amount: expense.amount,
             date: toDateInputValue(expense.date),
+            tripId: expense.tripId ?? "",
           }
         : {
             title: "",
@@ -83,9 +94,10 @@ export function ExpenseDialog({
             category: "Food",
             amount: undefined as unknown as number,
             date: toDateInputValue(new Date()),
+            tripId: defaultTripId ?? "",
           },
     );
-  }, [open, expense, form]);
+  }, [open, expense, defaultTripId, form]);
 
   const onSubmit = async (values: ExpenseInput) => {
     const result = expense
@@ -208,19 +220,61 @@ export function ExpenseDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tripId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Trip</FormLabel>
+                    <Select
+                      // Select cannot hold "", so map the empty value to a
+                      // sentinel on the way in and back to "" on the way out.
+                      value={field.value ? field.value : NO_TRIP}
+                      onValueChange={(value) =>
+                        field.onChange(value === NO_TRIP || !value ? "" : value)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue>
+                            {(value: string) =>
+                              value && value !== NO_TRIP
+                                ? (trips.find((t) => t.id === value)?.name ??
+                                  "No trip")
+                                : "No trip"
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_TRIP}>No trip</SelectItem>
+                        {trips.map((trip) => (
+                          <SelectItem key={trip.id} value={trip.id}>
+                            {trip.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button

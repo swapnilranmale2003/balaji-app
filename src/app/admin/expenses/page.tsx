@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ExpenseManager } from "@/app/admin/expenses/expense-manager";
-import { getExpenses } from "@/lib/data";
+import { getExpenses, getTripOptions } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Expenses",
@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminExpensesPage() {
-  const expenses = await getExpenses();
+  const [expenses, trips] = await Promise.all([
+    getExpenses(),
+    getTripOptions(),
+  ]);
 
-  return <ExpenseManager expenses={expenses} />;
+  return <ExpenseManager expenses={expenses} trips={trips} />;
 }

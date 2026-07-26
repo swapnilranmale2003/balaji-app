@@ -19,6 +19,23 @@ export type ExpenseRecord = {
   amount: number;
   date: Date;
   createdAt: Date;
+  tripId: string | null;
+  /** Denormalised for display so tables need no extra lookup. */
+  tripName?: string | null;
+};
+
+export type TripRecord = {
+  id: string;
+  name: string;
+  description: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  createdAt: Date;
+};
+
+export type TripWithTotals = TripRecord & {
+  totalSpent: number;
+  expenseCount: number;
 };
 
 export type Summary = {
@@ -55,7 +72,78 @@ export async function getSummary(): Promise<Summary> {
 }
 
 export async function getExpenses(): Promise<ExpenseRecord[]> {
-  return prisma.expense.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
+  const expenses = await prisma.expense.findMany({
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    include: { trip: { select: { name: true } } },
+  });
+
+  return expenses.map(({ trip, ...expense }) => ({
+    ...expense,
+    tripName: trip?.name ?? null,
+  }));
+}
+
+/** Trips with their spend totals, most recent first. */
+export async function getTripsWithTotals(): Promise<TripWithTotals[]> {
+  const [trips, grouped] = await Promise.all([
+    prisma.trip.findMany({
+      orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.expense.groupBy({
+      by: ["tripId"],
+      _sum: { amount: true },
+      _count: true,
+    }),
+  ]);
+
+  const totals = new Map(
+    grouped
+      .filter((row): row is typeof row & { tripId: string } => row.tripId !== null)
+      .map((row) => [row.tripId, { sum: row._sum.amount ?? 0, count: row._count }]),
+  );
+
+  return trips.map((trip) => ({
+    ...trip,
+    totalSpent: totals.get(trip.id)?.sum ?? 0,
+    expenseCount: totals.get(trip.id)?.count ?? 0,
+  }));
+}
+
+export async function getTripById(id: string): Promise<TripRecord | null> {
+  return prisma.trip.findUnique({ where: { id } });
+}
+
+/** A single trip plus its expenses, or null when the trip does not exist. */
+export async function getTripWithExpenses(
+  id: string,
+): Promise<{ trip: TripWithTotals; expenses: ExpenseRecord[] } | null> {
+  const trip = await prisma.trip.findUnique({
+    where: { id },
+    include: {
+      expenses: { orderBy: [{ date: "desc" }, { createdAt: "desc" }] },
+    },
+  });
+
+  if (!trip) return null;
+
+  const { expenses, ...rest } = trip;
+
+  return {
+    trip: {
+      ...rest,
+      totalSpent: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+      expenseCount: expenses.length,
+    },
+    expenses: expenses.map((expense) => ({ ...expense, tripName: trip.name })),
+  };
+}
+
+/** Lightweight list for the trip picker in the expense dialog. */
+export async function getTripOptions(): Promise<{ id: string; name: string }[]> {
+  return prisma.trip.findMany({
+    select: { id: true, name: true },
+    orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+  });
 }
 
 export async function getIncomes(): Promise<IncomeRecord[]> {

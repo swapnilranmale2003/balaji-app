@@ -8,7 +8,11 @@ import { IncomeDialog } from "@/components/income-dialog";
 import { Button } from "@/components/ui/button";
 
 /** The "Add Received Amount" / "Add Expense" pair on the admin dashboard. */
-export function QuickActions() {
+export function QuickActions({
+  trips,
+}: {
+  trips: { id: string; name: string }[];
+}) {
   const [incomeOpen, setIncomeOpen] = React.useState(false);
   const [expenseOpen, setExpenseOpen] = React.useState(false);
 
@@ -26,7 +30,11 @@ export function QuickActions() {
       </div>
 
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
-      <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
+      <ExpenseDialog
+        open={expenseOpen}
+        onOpenChange={setExpenseOpen}
+        trips={trips}
+      />
     </>
   );
 }
