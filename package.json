@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -13,8 +13,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "tsx --env-file=.env prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "db:seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
