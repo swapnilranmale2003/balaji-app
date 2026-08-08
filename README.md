@@ -104,13 +104,12 @@ for it to appear on a public page.
 
 ### Admin credentials
 
-| Field | Value |
-|---|---|
-| Username | `Kunal` |
-| Password | `Kunal@123` |
+There is no registration page — there is exactly one admin account, and it is
+defined entirely by `ADMIN_USERNAME` and `ADMIN_PASSWORD` in your `.env`. Set
+them to whatever you want before first login.
 
-There is no registration page — this is the only account. Both values come from
-`.env`, so change them there rather than in code.
+Credentials are deliberately not listed here: this file is public, and anything
+written in it is readable by anyone who finds the repository.
 
 ---
 
