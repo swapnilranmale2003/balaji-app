@@ -1,6 +1,18 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { prisma } from "@/lib/prisma";
+
+/** Every read is cached under this tag and invalidated on any write. */
+export const LEDGER_TAG = "ledger";
+
+function cached<A extends unknown[], R>(
+  fn: (...args: A) => Promise<R>,
+  keyParts: string[],
+) {
+  return unstable_cache(fn, keyParts, { tags: [LEDGER_TAG] });
+}
 
 export type ExpenseRecord = {
   id: string;
@@ -45,7 +57,7 @@ export type Summary = {
  * Portfolio-wide totals, aggregated in the database rather than summed in JS
  * so the work stays O(1) in transferred rows as the ledger grows.
  */
-export async function getSummary(): Promise<Summary> {
+async function getSummaryUncached(): Promise<Summary> {
   const [tripAgg, expenseAgg] = await Promise.all([
     prisma.trip.aggregate({ _sum: { received: true }, _count: true }),
     prisma.expense.aggregate({ _sum: { amount: true }, _count: true }),
@@ -64,7 +76,7 @@ export async function getSummary(): Promise<Summary> {
 }
 
 /** Trips with their spend totals and balances, most recent first. */
-export async function getTripsWithTotals(): Promise<TripWithTotals[]> {
+async function getTripsWithTotalsUncached(): Promise<TripWithTotals[]> {
   const [trips, grouped] = await Promise.all([
     prisma.trip.findMany({
       orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
@@ -96,7 +108,7 @@ export async function getTripsWithTotals(): Promise<TripWithTotals[]> {
 }
 
 /** A single trip plus its expenses, or null when the trip does not exist. */
-export async function getTripWithExpenses(
+async function getTripWithExpensesUncached(
   id: string,
 ): Promise<{ trip: TripWithTotals; expenses: ExpenseRecord[] } | null> {
   const trip = await prisma.trip.findUnique({
@@ -125,3 +137,7 @@ export async function getTripWithExpenses(
 export async function getTripById(id: string): Promise<TripRecord | null> {
   return prisma.trip.findUnique({ where: { id } });
 }
+
+export const getSummary = cached(getSummaryUncached, ["summary"]);
+export const getTripsWithTotals = cached(getTripsWithTotalsUncached, ["trips"]);
+export const getTripWithExpenses = cached(getTripWithExpensesUncached, ["trip"]);

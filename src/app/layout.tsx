@@ -18,11 +18,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Balaji — Team Expense Tracker",
-    template: "%s · Balaji Expense Tracker",
+    default: "Balaji Yatra Company — Expense Tracker",
+    template: "%s · Balaji Yatra",
   },
   description:
-    "Track team funds transparently — contributions received, expenses spent, and the remaining balance.",
+    "Trip funds and expenses for Balaji Yatra Company, openly recorded.",
 };
 
 export default function RootLayout({

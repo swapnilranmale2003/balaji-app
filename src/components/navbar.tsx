@@ -55,7 +55,7 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
           <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md">
             <Wallet className="size-4" />
           </span>
-          <span className="hidden text-sm sm:inline-block">Balaji Tracker</span>
+          <span className="hidden text-sm sm:inline-block">Balaji Yatra</span>
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 md:flex">
@@ -111,7 +111,7 @@ export function Navbar({ isAdmin }: { isAdmin: boolean }) {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-sm">
                   <Wallet className="size-4" />
-                  Balaji Tracker
+                  Balaji Yatra
                 </SheetTitle>
               </SheetHeader>
 

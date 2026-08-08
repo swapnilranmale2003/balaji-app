@@ -1,16 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth";
+import { LEDGER_TAG } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { parseDateInputValue } from "@/lib/utils";
 import { expenseSchema, type ActionResult } from "@/lib/validations";
 
-/** Refreshes every route whose numbers depend on the ledger. */
+/** Invalidates every cached read that depends on the ledger. */
 function revalidateLedger() {
-  revalidatePath("/", "layout");
-  revalidatePath("/admin", "layout");
+  revalidateTag(LEDGER_TAG);
 }
 
 export async function createExpense(
@@ -41,8 +41,7 @@ export async function createExpense(
         tripId,
       },
     });
-  } catch (error) {
-    console.error("createExpense failed", error);
+  } catch {
     return { success: false, error: "Could not save the expense. Please try again." };
   }
 
@@ -85,8 +84,7 @@ export async function updateExpense(
         tripId,
       },
     });
-  } catch (error) {
-    console.error("updateExpense failed", error);
+  } catch {
     return {
       success: false,
       error: "Could not update the expense. It may have been deleted.",
@@ -107,8 +105,7 @@ export async function deleteExpense(id: string): Promise<ActionResult<null>> {
 
   try {
     await prisma.expense.delete({ where: { id } });
-  } catch (error) {
-    console.error("deleteExpense failed", error);
+  } catch {
     return {
       success: false,
       error: "Could not delete the expense. It may have been deleted already.",

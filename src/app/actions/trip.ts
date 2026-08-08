@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth";
+import { LEDGER_TAG } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { parseDateInputValue } from "@/lib/utils";
 import {
@@ -11,10 +12,9 @@ import {
   type ActionResult,
 } from "@/lib/validations";
 
-/** Refreshes every route whose numbers depend on the ledger. */
+/** Invalidates every cached read that depends on the ledger. */
 function revalidateLedger() {
-  revalidatePath("/", "layout");
-  revalidatePath("/admin", "layout");
+  revalidateTag(LEDGER_TAG);
 }
 
 /** Empty date inputs mean "not set" rather than an invalid date. */
@@ -65,8 +65,6 @@ export async function createTrip(values: unknown): Promise<ActionResult<null>> {
         fieldErrors: { name: ["A trip with that name already exists."] },
       };
     }
-
-    console.error("createTrip failed", error);
     return { success: false, error: "Could not save the trip. Please try again." };
   }
 
@@ -116,8 +114,6 @@ export async function updateTrip(
         fieldErrors: { name: ["A trip with that name already exists."] },
       };
     }
-
-    console.error("updateTrip failed", error);
     return {
       success: false,
       error: "Could not update the trip. It may have been deleted.",
@@ -142,8 +138,7 @@ export async function deleteTrip(id: string): Promise<ActionResult<null>> {
 
   try {
     await prisma.trip.delete({ where: { id } });
-  } catch (error) {
-    console.error("deleteTrip failed", error);
+  } catch {
     return {
       success: false,
       error: "Could not delete the trip. It may have been deleted already.",
@@ -181,8 +176,7 @@ export async function updateTripReceived(
       where: { id },
       data: { received: parsed.data.received },
     });
-  } catch (error) {
-    console.error("updateTripReceived failed", error);
+  } catch {
     return {
       success: false,
       error: "Could not update the received amount. Please try again.",

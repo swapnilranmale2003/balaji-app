@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,10 +11,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  React.useEffect(() => {
-    console.error(error);
-  }, [error]);
-
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
       <span className="bg-destructive/10 text-destructive flex size-12 items-center justify-center rounded-xl">

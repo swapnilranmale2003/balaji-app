@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   title: "Trips",
 };
 
-export const dynamic = "force-dynamic";
 
 /** "12 Jul 2026 – 18 Jul 2026", or a single date, or an em dash. */
 function formatRange(start: Date | null, end: Date | null): string {

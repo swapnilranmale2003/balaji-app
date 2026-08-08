@@ -1,4 +1,4 @@
-# Balaji — Team Expense Tracker
+# Balaji Yatra Company — Expense Tracker
 
 A transparent ledger for shared team funds. Anyone can visit the site and see how
 much has been collected, what it was spent on, and what is left. A single admin
@@ -35,26 +35,69 @@ totals are the sums across trips.
 
 ## Getting started
 
-Requires Node.js 20 or newer.
+Requires Node.js 20+ and Docker (for the local database).
 
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Create your environment file
+# 2. Start PostgreSQL
+docker run -d --name balaji-postgres \
+  -e POSTGRES_USER=balaji \
+  -e POSTGRES_PASSWORD=balaji_dev_2026 \
+  -e POSTGRES_DB=balaji_tracker \
+  -p 5435:5432 \
+  -v balaji_pgdata:/var/lib/postgresql/data \
+  --restart unless-stopped \
+  postgres:16
+
+# 3. Create your environment file
 cp .env.example .env
 
-# 3. Create the database and tables
+# 4. Create the tables
 npm run db:migrate
-
-# 4. (Optional) Load sample data
-npm run db:seed
 
 # 5. Start the dev server
 npm run dev
 ```
 
 Open <http://localhost:3000>.
+
+### Local database
+
+| Setting | Value |
+|---|---|
+| Host | `localhost` |
+| Port | `5435` |
+| Database | `balaji_tracker` |
+| User | `balaji` |
+| Password | `balaji_dev_2026` |
+
+```
+postgresql://balaji:balaji_dev_2026@localhost:5435/balaji_tracker?schema=public
+```
+
+Port 5435 avoids colliding with a system PostgreSQL on 5432. Browse the data
+with `npm run db:studio`, or connect directly:
+
+```bash
+docker exec -it balaji-postgres psql -U balaji -d balaji_tracker
+```
+
+### The login photo
+
+The login screen loads `public/team.jpg`. A placeholder ships with the repo —
+replace that file with your own image (keep the name). A portrait or square
+photo works best, since it fills the left half of the screen.
+
+### Deploying to Vercel
+
+1. Provision a PostgreSQL database (Vercel Postgres, Neon, or Supabase).
+2. In the Vercel project, set the environment variables from `.env.example` —
+   `DATABASE_URL` (with `sslmode=require`), `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
+   and a fresh `AUTH_SECRET`.
+3. Deploy. `postinstall` runs `prisma generate`; apply migrations once with
+   `npm run db:deploy` against the production URL.
 
 ### Admin credentials
 
@@ -101,33 +144,10 @@ openssl rand -base64 32
 
 ---
 
-## Switching to PostgreSQL
+## Notes on the database
 
-SQLite is the default so the project runs with no external services. To move to
-PostgreSQL:
-
-1. Set the provider in `prisma/schema.prisma`:
-
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-   }
-   ```
-
-2. Install the adapter and swap it in `src/lib/prisma.ts`:
-
-   ```bash
-   npm install @prisma/adapter-pg
-   ```
-
-   ```ts
-   import { PrismaPg } from "@prisma/adapter-pg";
-   const adapter = new PrismaPg({ connectionString: url });
-   ```
-
-   Prisma 7 requires an explicit driver adapter, which is why this step is needed.
-
-3. Point `DATABASE_URL` at your instance and run `npm run db:migrate`.
+PostgreSQL is used in both development and production. Prisma 7 requires an
+explicit driver adapter, configured in `src/lib/prisma.ts`.
 
 ---
 

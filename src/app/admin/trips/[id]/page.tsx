@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { TripDetail } from "@/app/admin/trips/[id]/trip-detail";
 import { getTripWithExpenses } from "@/lib/data";
 
-export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
