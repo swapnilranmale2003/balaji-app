@@ -30,7 +30,7 @@ const ADMIN_LINKS: NavLink[] = [
 
 const PUBLIC_LINKS: NavLink[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/trips", label: "Trips", icon: MapPin },
+  { href: "/trips", label: "Trips & Expenses", icon: MapPin },
 ];
 
 export function Navbar({ isAdmin }: { isAdmin: boolean }) {

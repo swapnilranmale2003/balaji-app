@@ -107,6 +107,39 @@ async function getTripsWithTotalsUncached(): Promise<TripWithTotals[]> {
   });
 }
 
+export type TripWithExpenses = TripWithTotals & {
+  expenses: ExpenseRecord[];
+};
+
+/**
+ * Every trip with its expenses attached, for the public trip-wise breakdown.
+ * One query per table rather than one per trip, so the cost does not grow with
+ * the number of trips.
+ */
+async function getTripsWithExpensesUncached(): Promise<TripWithExpenses[]> {
+  const trips = await prisma.trip.findMany({
+    orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+    include: {
+      expenses: { orderBy: [{ date: "desc" }, { createdAt: "desc" }] },
+    },
+  });
+
+  return trips.map(({ expenses, ...trip }) => {
+    const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
+
+    return {
+      ...trip,
+      totalSpent,
+      balance: trip.received - totalSpent,
+      expenseCount: expenses.length,
+      expenses: expenses.map((expense) => ({
+        ...expense,
+        tripName: trip.name,
+      })),
+    };
+  });
+}
+
 /** A single trip plus its expenses, or null when the trip does not exist. */
 async function getTripWithExpensesUncached(
   id: string,
@@ -140,4 +173,7 @@ export async function getTripById(id: string): Promise<TripRecord | null> {
 
 export const getSummary = cached(getSummaryUncached, ["summary"]);
 export const getTripsWithTotals = cached(getTripsWithTotalsUncached, ["trips"]);
+export const getTripsWithExpenses = cached(getTripsWithExpensesUncached, [
+  "trips-expenses",
+]);
 export const getTripWithExpenses = cached(getTripWithExpensesUncached, ["trip"]);

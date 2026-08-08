@@ -5,7 +5,7 @@ much has been collected, what it was spent on, and what is left. A single admin
 account manages the entries.
 
 - **Public** (`/`) — trip totals and spending. No login.
-- **Trips** (`/trips`) — every trip with its funds, expenses and balance. No login.
+- **Trips & Expenses** (`/trips`) — every trip with its full expense list, funds and balance. No login.
 - **Admin** (`/admin`) — create trips, set each trip's received amount, record expenses.
 
 **The trip is the unit of accounting.** Each trip holds its own received
@@ -237,8 +237,11 @@ src/
 
 **Public view**
 - Portfolio totals: received, spent, remaining balance, trip count
+- `/trips` lists every trip with its expenses inline, grouped trip-wise, so a
+  visitor sees the whole ledger without clicking through
 - Per-trip received / spent / balance
-- Drill into any trip to see its expenses
+- Read-only throughout: no create, edit or delete controls are rendered, and
+  every write path is guarded server-side by `requireAdmin()`
 
 **Throughout**
 - No sample data — the database ships empty and every figure is real

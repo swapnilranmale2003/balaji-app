@@ -76,7 +76,7 @@ export default async function HomePage() {
                   href="/trips"
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm transition-colors"
                 >
-                  View all
+                  View all expenses
                   <ArrowRight className="size-3.5" />
                 </Link>
               )}
