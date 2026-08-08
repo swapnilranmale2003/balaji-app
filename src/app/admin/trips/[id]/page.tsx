@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { TripDetail } from "@/app/admin/trips/[id]/trip-detail";
 import { getTripWithExpenses } from "@/lib/data";
 
+// Reads the ledger per request; never prerendered at build time.
+export const dynamic = "force-dynamic";
+
 
 type PageProps = { params: Promise<{ id: string }> };
 

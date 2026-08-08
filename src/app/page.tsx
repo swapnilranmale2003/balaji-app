@@ -17,6 +17,9 @@ import { getSession } from "@/lib/auth";
 import { getSummary, getTripsWithTotals } from "@/lib/data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
+// Reads the ledger per request; never prerendered at build time.
+export const dynamic = "force-dynamic";
+
 /** "12 Jul 2026 – 18 Jul 2026", or a single date, or an em dash. */
 function formatRange(start: Date | null, end: Date | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;

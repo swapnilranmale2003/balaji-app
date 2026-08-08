@@ -20,6 +20,9 @@ import { getCategoryMeta } from "@/lib/constants";
 import { getTripWithExpenses } from "@/lib/data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
+// Reads the ledger per request; never prerendered at build time.
+export const dynamic = "force-dynamic";
+
 
 type PageProps = { params: Promise<{ id: string }> };
 

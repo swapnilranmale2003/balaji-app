@@ -16,6 +16,9 @@ import {
 import { getSummary, getTripsWithTotals } from "@/lib/data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
+// Reads the ledger per request; never prerendered at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Dashboard",
 };
