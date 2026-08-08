@@ -20,11 +20,12 @@ export default async function LoginPage({
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <Image
-          src="/team.jpg"
-          alt="The Balaji Yatra team"
+          src="/login-hero.jpg"
+          alt=""
           fill
           sizes="50vw"
           priority
+          quality={80}
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -50,8 +51,8 @@ export default async function LoginPage({
 
           <div className="relative mb-6 h-36 w-full overflow-hidden rounded-lg lg:hidden">
             <Image
-              src="/team.jpg"
-              alt="The Balaji Yatra team"
+              src="/login-hero.jpg"
+              alt=""
               fill
               sizes="100vw"
               priority

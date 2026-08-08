@@ -84,11 +84,14 @@ with `npm run db:studio`, or connect directly:
 docker exec -it balaji-postgres psql -U balaji -d balaji_tracker
 ```
 
-### The login photo
+### The login image
 
-The login screen loads `public/team.jpg`. A placeholder ships with the repo —
-replace that file with your own image (keep the name). A portrait or square
-photo works best, since it fills the left half of the screen.
+The login screen loads `public/login-hero.jpg` — currently a Himalayan valley
+photo. Replace that file to use your own (keep the filename). A portrait
+orientation works best, since it fills the left half of the screen.
+
+If you use a photo of identifiable people, make sure everyone pictured is happy
+for it to appear on a public page.
 
 ### Deploying to Vercel
 
