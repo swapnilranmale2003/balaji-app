@@ -9,12 +9,8 @@ import { expenseSchema, type ActionResult } from "@/lib/validations";
 
 /** Refreshes every route whose numbers depend on the ledger. */
 function revalidateLedger() {
-  revalidatePath("/");
-  revalidatePath("/trips", "layout");
-  revalidatePath("/admin");
-  revalidatePath("/admin/income");
-  revalidatePath("/admin/expenses");
-  revalidatePath("/admin/trips");
+  revalidatePath("/", "layout");
+  revalidatePath("/admin", "layout");
 }
 
 export async function createExpense(
@@ -42,8 +38,7 @@ export async function createExpense(
         category,
         amount,
         date: parseDateInputValue(date),
-        // An unselected trip arrives as "", which must be stored as NULL.
-        tripId: tripId || null,
+        tripId,
       },
     });
   } catch (error) {
@@ -87,8 +82,7 @@ export async function updateExpense(
         category,
         amount,
         date: parseDateInputValue(date),
-        // An unselected trip arrives as "", which must be stored as NULL.
-        tripId: tripId || null,
+        tripId,
       },
     });
   } catch (error) {

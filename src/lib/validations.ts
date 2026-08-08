@@ -17,31 +17,6 @@ const dateString = z
     );
   }, "That date does not exist");
 
-/**
- * Amounts arrive from `<input type="number">` as strings. Coerce, then bound
- * them so the database never stores NaN, negatives, or unrenderable values.
- */
-const amount = z.coerce
-  .number({ invalid_type_error: "Amount must be a number" })
-  .positive("Amount must be greater than 0")
-  .max(100_000_000, "Amount must be 10,00,00,000 or less")
-  .refine(Number.isFinite, "Amount must be a valid number");
-
-export const loginSchema = z.object({
-  username: z.string().trim().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-
-export const incomeSchema = z.object({
-  amount,
-  description: z
-    .string()
-    .trim()
-    .min(2, "Description must be at least 2 characters")
-    .max(200, "Description must be 200 characters or fewer"),
-  date: dateString,
-});
-
 /** An optional `yyyy-MM-dd`; empty string means "not set". */
 const optionalDateString = z
   .string()
@@ -50,6 +25,31 @@ const optionalDateString = z
     message: "Use the date picker to choose a valid date",
   })
   .default("");
+
+const MAX_AMOUNT = 100_000_000;
+
+/**
+ * Amounts arrive from `<input type="number">` as strings. Coerce, then bound
+ * them so the database never stores NaN, negatives, or unrenderable values.
+ */
+const amount = z.coerce
+  .number({ invalid_type_error: "Amount must be a number" })
+  .positive("Amount must be greater than 0")
+  .max(MAX_AMOUNT, "Amount must be 10,00,00,000 or less")
+  .refine(Number.isFinite, "Amount must be a valid number");
+
+/** A trip may legitimately have collected nothing yet, so zero is allowed. */
+const receivedAmount = z.coerce
+  .number({ invalid_type_error: "Received amount must be a number" })
+  .min(0, "Received amount cannot be negative")
+  .max(MAX_AMOUNT, "Received amount must be 10,00,00,000 or less")
+  .refine(Number.isFinite, "Received amount must be a valid number")
+  .default(0);
+
+export const loginSchema = z.object({
+  username: z.string().trim().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 export const tripSchema = z
   .object({
@@ -63,14 +63,17 @@ export const tripSchema = z
       .trim()
       .max(300, "Description must be 300 characters or fewer")
       .default(""),
+    received: receivedAmount,
     startDate: optionalDateString,
     endDate: optionalDateString,
   })
   .refine(
-    (data) =>
-      !data.startDate || !data.endDate || data.startDate <= data.endDate,
+    (data) => !data.startDate || !data.endDate || data.startDate <= data.endDate,
     { message: "End date cannot be before the start date", path: ["endDate"] },
   );
+
+/** Editing just the received amount, from the trip detail page. */
+export const receivedSchema = z.object({ received: receivedAmount });
 
 export const expenseSchema = z.object({
   title: z
@@ -88,15 +91,14 @@ export const expenseSchema = z.object({
   }),
   amount,
   date: dateString,
-  // Empty string is what an unselected <Select> submits; both it and undefined
-  // mean "no trip", and the action normalises them to null.
-  tripId: z.string().trim().optional().default(""),
+  // Every expense belongs to a trip, so this is required.
+  tripId: z.string().trim().min(1, "Choose a trip"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
-export type IncomeInput = z.infer<typeof incomeSchema>;
 export type ExpenseInput = z.infer<typeof expenseSchema>;
 export type TripInput = z.infer<typeof tripSchema>;
+export type ReceivedInput = z.infer<typeof receivedSchema>;
 
 /** Shape returned by every server action, so forms can handle results uniformly. */
 export type ActionResult<T = void> =

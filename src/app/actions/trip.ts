@@ -5,16 +5,16 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseDateInputValue } from "@/lib/utils";
-import { tripSchema, type ActionResult } from "@/lib/validations";
+import {
+  receivedSchema,
+  tripSchema,
+  type ActionResult,
+} from "@/lib/validations";
 
 /** Refreshes every route whose numbers depend on the ledger. */
 function revalidateLedger() {
-  revalidatePath("/");
-  revalidatePath("/trips", "layout");
-  revalidatePath("/admin");
-  revalidatePath("/admin/income");
-  revalidatePath("/admin/expenses");
-  revalidatePath("/admin/trips");
+  revalidatePath("/", "layout");
+  revalidatePath("/admin", "layout");
 }
 
 /** Empty date inputs mean "not set" rather than an invalid date. */
@@ -45,13 +45,14 @@ export async function createTrip(values: unknown): Promise<ActionResult<null>> {
     };
   }
 
-  const { name, description, startDate, endDate } = parsed.data;
+  const { name, description, received, startDate, endDate } = parsed.data;
 
   try {
     await prisma.trip.create({
       data: {
         name,
         description,
+        received,
         startDate: toDateOrNull(startDate),
         endDate: toDateOrNull(endDate),
       },
@@ -94,7 +95,7 @@ export async function updateTrip(
     };
   }
 
-  const { name, description, startDate, endDate } = parsed.data;
+  const { name, description, received, startDate, endDate } = parsed.data;
 
   try {
     await prisma.trip.update({
@@ -102,6 +103,7 @@ export async function updateTrip(
       data: {
         name,
         description,
+        received,
         startDate: toDateOrNull(startDate),
         endDate: toDateOrNull(endDate),
       },
@@ -128,9 +130,8 @@ export async function updateTrip(
 }
 
 /**
- * Deletes the trip only. Its expenses survive with `tripId` cleared
- * (`onDelete: SetNull`) — the money was still spent, so removing the rows
- * would silently change the team's totals.
+ * Deletes the trip and, by cascade, every expense recorded against it. The trip
+ * is the unit of accounting, so its expenses have no meaning without it.
  */
 export async function deleteTrip(id: string): Promise<ActionResult<null>> {
   await requireAdmin();
@@ -146,6 +147,45 @@ export async function deleteTrip(id: string): Promise<ActionResult<null>> {
     return {
       success: false,
       error: "Could not delete the trip. It may have been deleted already.",
+    };
+  }
+
+  revalidateLedger();
+
+  return { success: true, data: null };
+}
+
+/** Updates just the received amount, from the trip detail page. */
+export async function updateTripReceived(
+  id: string,
+  values: unknown,
+): Promise<ActionResult<null>> {
+  await requireAdmin();
+
+  if (!id) {
+    return { success: false, error: "Missing trip id." };
+  }
+
+  const parsed = receivedSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: "Please fix the highlighted fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await prisma.trip.update({
+      where: { id },
+      data: { received: parsed.data.received },
+    });
+  } catch (error) {
+    console.error("updateTripReceived failed", error);
+    return {
+      success: false,
+      error: "Could not update the received amount. Please try again.",
     };
   }
 

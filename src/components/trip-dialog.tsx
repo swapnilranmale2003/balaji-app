@@ -41,6 +41,7 @@ type TripDialogProps = {
 const EMPTY: TripInput = {
   name: "",
   description: "",
+  received: 0,
   startDate: "",
   endDate: "",
 };
@@ -63,6 +64,7 @@ export function TripDialog({ open, onOpenChange, trip }: TripDialogProps) {
         ? {
             name: trip.name,
             description: trip.description,
+            received: trip.received,
             startDate: trip.startDate ? toDateInputValue(trip.startDate) : "",
             endDate: trip.endDate ? toDateInputValue(trip.endDate) : "",
           }
@@ -116,6 +118,31 @@ export function TripDialog({ open, onOpenChange, trip }: TripDialogProps) {
                   <FormControl>
                     <Input placeholder="Goa Trip 2026" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="received"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Total Amount Received (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Funds collected for this trip. You can change this later.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

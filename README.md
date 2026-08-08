@@ -4,12 +4,14 @@ A transparent ledger for shared team funds. Anyone can visit the site and see ho
 much has been collected, what it was spent on, and what is left. A single admin
 account manages the entries.
 
-- **Public** (`/`) — summary cards, charts, and a searchable expense history. No login.
-- **Trips** (`/trips`) — expenses grouped by trip, with each trip's total. No login.
-- **Admin** (`/admin`) — full create / edit / delete for income, expenses, and trips.
+- **Public** (`/`) — trip totals and spending. No login.
+- **Trips** (`/trips`) — every trip with its funds, expenses and balance. No login.
+- **Admin** (`/admin`) — create trips, set each trip's received amount, record expenses.
 
-The remaining balance is never stored. It is always computed as
-`Total Received − Total Expenses`.
+**The trip is the unit of accounting.** Each trip holds its own received
+amount, and every expense belongs to a trip. No balance is ever stored — a
+trip's balance is always computed as `Received − Spent`, and the portfolio
+totals are the sums across trips.
 
 ---
 
@@ -94,7 +96,7 @@ openssl rand -base64 32
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run db:migrate` | Create and apply a migration (dev) |
 | `npm run db:deploy` | Apply existing migrations (production) |
-| `npm run db:seed` | Load sample income and expenses |
+| `npm run db:seed` | Clear the database (creates no sample data) |
 | `npm run db:studio` | Browse the database in Prisma Studio |
 
 ---
@@ -133,36 +135,30 @@ PostgreSQL:
 
 ```
 prisma/
-  schema.prisma          Trip, Income and Expense models
-  seed.ts                Sample data
+  schema.prisma          Trip and Expense models
+  seed.ts                Clears the database (creates no sample data)
 
 src/
   app/
-    page.tsx             Public dashboard
+    page.tsx             Public overview
     login/               Admin login
-    admin/
-      page.tsx           Admin dashboard
-      income/            Income management
-      expenses/          Expense management
-      trips/             Trip management
     trips/
       page.tsx           Public trip list
       [id]/              Public trip detail
-    actions/             Server Actions (auth, income, expense)
-    error.tsx            Error boundary
-    not-found.tsx        404
+    admin/
+      page.tsx           Admin dashboard
+      trips/
+        page.tsx         Trip list
+        [id]/            Trip detail — expenses and editable received amount
+    actions/             Server Actions (auth, trip, expense)
 
   components/
-    dashboard-cards.tsx  The four summary cards
-    expense-table.tsx    Search / filter / sort / paginate / export
-    income-dialog.tsx    Create and edit income
-    expense-dialog.tsx   Create and edit expenses
+    stat-row.tsx         Compact figures row
     trip-dialog.tsx      Create and edit trips
+    expense-dialog.tsx   Create and edit expenses
+    received-editor.tsx  Inline editor for a trip's received amount
     delete-dialog.tsx    Delete confirmation
-    summary-charts.tsx   Monthly and category charts
     navbar.tsx           Header with mobile sheet menu
-    footer.tsx
-    ui/                  shadcn/ui components
 
   lib/
     auth.ts              Sessions, credential checks, route guards
@@ -170,7 +166,7 @@ src/
     data.ts              Queries and aggregations
     validations.ts       Zod schemas shared by client and server
     constants.ts         Categories and display metadata
-    utils.ts             Currency, date, and CSV helpers
+    utils.ts             Currency and date helpers
 
   middleware.ts          Redirects unauthenticated users away from /admin
 ```
@@ -180,31 +176,28 @@ src/
 ## Features
 
 **Trips**
-- Admin creates a trip (name, description, optional start and end dates)
-- Each expense can be assigned to a trip when it is added or edited
-- Public visitors browse `/trips` and drill into any trip to see its expenses
-  and total
+- Create a trip with a name, description, optional dates, and the total amount
+  received for it
+- The received amount is editable in place from the trip page
 - Trip names are unique
-- Deleting a trip keeps its expenses — they simply lose the trip label, so the
-  team totals never change
+- Deleting a trip also deletes its expenses (they have no meaning without it),
+  with a confirmation dialog stating how many
+
+**Expenses**
+- Recorded against a trip, with a category, amount, date and optional notes
+- Searchable and filterable by category within the trip
+- Full create / edit / delete, each with validation on client and server
 
 **Public view**
-- Total Received, Total Expense, Remaining Balance, Total Transactions
-- Monthly received-vs-spent chart and a category breakdown
-- Expense table with search, category filter, date sorting, and pagination
-- CSV export
-
-**Admin**
-- Create, edit, and delete both income and expenses
-- Confirmation dialog before any delete
-- Totals recalculate immediately after every change
-- Toast notifications on success and failure
+- Portfolio totals: received, spent, remaining balance, trip count
+- Per-trip received / spent / balance
+- Drill into any trip to see its expenses
 
 **Throughout**
+- No sample data — the database ships empty and every figure is real
 - Dark mode with a light/dark/system toggle
 - Responsive from 390px upward
-- Loading skeletons while data streams in
-- Validation on both the client and the server
+- Toast notifications on success and failure
 
 ---
 
@@ -222,13 +215,3 @@ src/
   formula injection in spreadsheet software.
 
 Before deploying, set a strong `AUTH_SECRET` and change `ADMIN_PASSWORD`.
-
----
-
-## Charts and accessibility
-
-Chart colors are assigned from a fixed categorical palette validated for
-colour-vision deficiency against both the light and dark surfaces. Series are
-always identified by a legend or a direct label, never by colour alone, and the
-category breakdown ships an accompanying figure list that doubles as a
-text alternative to the chart.

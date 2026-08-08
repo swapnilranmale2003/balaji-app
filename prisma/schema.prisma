@@ -10,21 +10,12 @@ datasource db {
   provider = "sqlite"
 }
 
-model Income {
-  id          String   @id @default(cuid())
-  amount      Float
-  description String
-  date        DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([date])
-}
-
 model Trip {
   id          String    @id @default(cuid())
   name        String    @unique
   description String    @default("")
+  /// Funds collected for this trip. Editable; the balance derives from it.
+  received    Float     @default(0)
   startDate   DateTime?
   endDate     DateTime?
   createdAt   DateTime  @default(now())
@@ -38,18 +29,17 @@ model Trip {
 model Expense {
   id          String   @id @default(cuid())
   title       String
-  description String
+  description String   @default("")
   category    String
   amount      Float
   date        DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Optional: not every expense belongs to a trip (general team costs), and
-  // expenses recorded before trips existed have none. Deleting a trip clears
-  // this rather than deleting the expense — the money was still spent.
-  tripId String?
-  trip   Trip?   @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  // Every expense belongs to a trip. Deleting a trip removes its expenses
+  // along with it — the trip is the unit of accounting.
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([category])

@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarRange, MapPin, Receipt } from "lucide-react";
 
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getSession } from "@/lib/auth";
 import { getTripsWithTotals } from "@/lib/data";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Trips",
@@ -21,12 +22,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-/** "12 Jul 2026 – 18 Jul 2026", or a single date, or nothing. */
-function formatRange(start: Date | null, end: Date | null): string | null {
+/** "12 Jul 2026 – 18 Jul 2026", or a single date, or an em dash. */
+function formatRange(start: Date | null, end: Date | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
   if (start) return `From ${formatDate(start)}`;
   if (end) return `Until ${formatDate(end)}`;
-  return null;
+  return "—";
 }
 
 export default async function PublicTripsPage() {
@@ -35,87 +36,87 @@ export default async function PublicTripsPage() {
     getTripsWithTotals(),
   ]);
 
-  const grandTotal = trips.reduce((sum, trip) => sum + trip.totalSpent, 0);
-
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar isAdmin={Boolean(session)} />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Trips</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Trips
+          </h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">
             {trips.length > 0
-              ? `${trips.length} ${trips.length === 1 ? "trip" : "trips"} · ${formatCurrency(grandTotal)} spent in total`
+              ? `${trips.length} ${trips.length === 1 ? "trip" : "trips"} recorded`
               : "Expenses grouped by trip."}
           </p>
         </div>
 
-        {trips.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-              <span className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-xl">
-                <MapPin className="size-6" />
-              </span>
-              <div>
+        <Card className="gap-0 py-0">
+          <CardContent className="p-0">
+            {trips.length === 0 ? (
+              <div className="px-6 py-16 text-center">
                 <p className="font-medium">No trips yet</p>
                 <p className="text-muted-foreground mt-1 text-sm">
                   Trips will appear here once the admin creates one.
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {trips.map((trip) => {
-              const range = formatRange(trip.startDate, trip.endDate);
-
-              return (
-                <Link
-                  key={trip.id}
-                  href={`/trips/${trip.id}`}
-                  className="focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:outline-none"
-                >
-                <Card className="flex h-full flex-col transition-shadow hover:shadow-md">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="text-muted-foreground size-4 shrink-0" />
-                      <span className="truncate">{trip.name}</span>
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {trip.description || "No description"}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="mt-auto grid gap-3">
-                    {range && (
-                      <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <CalendarRange className="size-4 shrink-0" />
-                        {range}
-                      </p>
-                    )}
-
-                    <div className="flex items-end justify-between gap-2 border-t pt-3">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                        <Receipt className="size-4" />
-                        {trip.expenseCount}{" "}
-                        {trip.expenseCount === 1 ? "expense" : "expenses"}
-                      </span>
-                      <span className="text-lg font-bold tabular-nums">
-                        {formatCurrency(trip.totalSpent)}
-                      </span>
-                    </div>
-
-                    <span className="text-primary text-sm font-medium">
-                      View expenses →
-                    </span>
-                  </CardContent>
-                </Card>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="min-w-[12rem]">Trip</TableHead>
+                      <TableHead className="min-w-[11rem]">Dates</TableHead>
+                      <TableHead className="text-right">Received</TableHead>
+                      <TableHead className="text-right">Spent</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trips.map((trip) => (
+                      <TableRow key={trip.id}>
+                        <TableCell>
+                          <Link
+                            href={`/trips/${trip.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {trip.name}
+                          </Link>
+                          {trip.description && (
+                            <p className="text-muted-foreground line-clamp-1 text-xs">
+                              {trip.description}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                          {formatRange(trip.startDate, trip.endDate)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">
+                          {formatCurrency(trip.received)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">
+                          {formatCurrency(trip.totalSpent)}
+                          <span className="text-muted-foreground ml-1.5 text-xs">
+                            ({trip.expenseCount})
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium tabular-nums whitespace-nowrap",
+                            trip.balance < 0 && "text-destructive",
+                          )}
+                        >
+                          {formatCurrency(trip.balance)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       <Footer />

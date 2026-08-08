@@ -3,51 +3,70 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  CalendarRange,
-  Eye,
-  MapPin,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Receipt,
-  Trash2,
-} from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import { deleteTrip } from "@/app/actions/trip";
 import { DeleteDialog } from "@/components/delete-dialog";
+import { StatRow } from "@/components/stat-row";
 import { TripDialog } from "@/components/trip-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { TripWithTotals } from "@/lib/data";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
-/** "12 Jul 2026 – 18 Jul 2026", or a single date, or nothing. */
-function formatRange(start: Date | null, end: Date | null): string | null {
+/** "12 Jul 2026 – 18 Jul 2026", or a single date, or an em dash. */
+function formatRange(start: Date | null, end: Date | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
   if (start) return `From ${formatDate(start)}`;
   if (end) return `Until ${formatDate(end)}`;
-  return null;
+  return "—";
 }
 
 export function TripManager({ trips }: { trips: TripWithTotals[] }) {
   const router = useRouter();
+  const [query, setQuery] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<TripWithTotals | null>(null);
   const [pendingDelete, setPendingDelete] =
     React.useState<TripWithTotals | null>(null);
+
+  const filtered = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return trips;
+
+    return trips.filter(
+      (trip) =>
+        trip.name.toLowerCase().includes(needle) ||
+        trip.description.toLowerCase().includes(needle),
+    );
+  }, [trips, query]);
+
+  const totals = React.useMemo(
+    () =>
+      trips.reduce(
+        (acc, trip) => ({
+          received: acc.received + trip.received,
+          spent: acc.spent + trip.totalSpent,
+        }),
+        { received: 0, spent: 0 },
+      ),
+    [trips],
+  );
 
   const openAdd = () => {
     setEditing(null);
@@ -61,121 +80,166 @@ export function TripManager({ trips }: { trips: TripWithTotals[] }) {
 
   return (
     <>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Trips</h1>
-          <p className="text-muted-foreground mt-1">
-            Group expenses by trip so everyone can see what each one cost.
+          <h1 className="text-xl font-semibold tracking-tight">Trips</h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            Each trip holds its own funds and expenses.
           </p>
         </div>
-        <Button onClick={openAdd} className="self-start sm:self-auto">
+        <Button size="sm" onClick={openAdd} className="self-start sm:self-auto">
           <Plus className="size-4" />
-          Create Trip
+          New Trip
         </Button>
       </div>
 
-      {trips.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <span className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-xl">
-              <MapPin className="size-6" />
-            </span>
-            <div>
+      <StatRow
+        stats={[
+          { label: "Trips", value: String(trips.length) },
+          { label: "Total Received", value: totals.received },
+          { label: "Total Spent", value: totals.spent },
+          {
+            label: "Balance",
+            value: totals.received - totals.spent,
+            emphasise: true,
+          },
+        ]}
+      />
+
+      <Card className="gap-0 py-0">
+        <CardContent className="p-0">
+          {trips.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <p className="font-medium">No trips yet</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Create a trip, then record expenses against it.
+              <p className="text-muted-foreground max-w-sm text-sm">
+                Create your first trip, set how much was collected for it, then
+                record expenses against it.
               </p>
+              <Button size="sm" onClick={openAdd} className="mt-1">
+                <Plus className="size-4" />
+                New Trip
+              </Button>
             </div>
-            <Button onClick={openAdd} className="mt-2">
-              <Plus className="size-4" />
-              Create Trip
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {trips.map((trip) => {
-            const range = formatRange(trip.startDate, trip.endDate);
+          ) : (
+            <>
+              <div className="border-b p-3">
+                <div className="relative max-w-sm">
+                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search trips…"
+                    className="h-8 pl-9"
+                    aria-label="Search trips"
+                  />
+                </div>
+              </div>
 
-            return (
-              <Card key={trip.id} className="flex flex-col transition-shadow hover:shadow-md">
-                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-                  <div className="min-w-0">
-                    <CardTitle className="truncate">{trip.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {trip.description || "No description"}
-                    </CardDescription>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 shrink-0"
-                          aria-label={`Actions for ${trip.name}`}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="min-w-[12rem]">Trip</TableHead>
+                      <TableHead className="min-w-[11rem]">Dates</TableHead>
+                      <TableHead className="text-right">Received</TableHead>
+                      <TableHead className="text-right">Spent</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-muted-foreground h-24 text-center"
                         >
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => router.push(`/trips/${trip.id}`)}
-                      >
-                        <Eye className="size-4" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEdit(trip)}>
-                        <Pencil className="size-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setPendingDelete(trip)}
-                      >
-                        <Trash2 className="size-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-
-                <CardContent className="mt-auto grid gap-3">
-                  {range && (
-                    <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <CalendarRange className="size-4 shrink-0" />
-                      {range}
-                    </p>
-                  )}
-
-                  <div className="flex items-end justify-between gap-2 border-t pt-3">
-                    <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                      <Receipt className="size-4" />
-                      {trip.expenseCount}{" "}
-                      {trip.expenseCount === 1 ? "expense" : "expenses"}
-                    </span>
-                    <span className="text-lg font-bold tabular-nums">
-                      {formatCurrency(trip.totalSpent)}
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/trips/${trip.id}`}
-                    className={cn(
-                      buttonVariants({ variant: "outline", size: "sm" }),
-                      "w-full",
+                          No trips match your search.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((trip) => (
+                        <TableRow key={trip.id}>
+                          <TableCell>
+                            <Link
+                              href={`/admin/trips/${trip.id}`}
+                              className="hover:underline"
+                            >
+                              <span className="font-medium">{trip.name}</span>
+                            </Link>
+                            {trip.description && (
+                              <p className="text-muted-foreground line-clamp-1 text-xs">
+                                {trip.description}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                            {formatRange(trip.startDate, trip.endDate)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums whitespace-nowrap">
+                            {formatCurrency(trip.received)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums whitespace-nowrap">
+                            {formatCurrency(trip.totalSpent)}
+                            <span className="text-muted-foreground ml-1.5 text-xs">
+                              ({trip.expenseCount})
+                            </span>
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "text-right font-medium tabular-nums whitespace-nowrap",
+                              trip.balance < 0 && "text-destructive",
+                            )}
+                          >
+                            {formatCurrency(trip.balance)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-8"
+                                    aria-label={`Actions for ${trip.name}`}
+                                  >
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                }
+                              />
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    router.push(`/admin/trips/${trip.id}`)
+                                  }
+                                >
+                                  <Search className="size-4" />
+                                  Open
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openEdit(trip)}>
+                                  <Pencil className="size-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => setPendingDelete(trip)}
+                                >
+                                  <Trash2 className="size-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
-                  >
-                    View expenses
-                  </Link>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <TripDialog open={dialogOpen} onOpenChange={setDialogOpen} trip={editing} />
 
@@ -186,19 +250,10 @@ export function TripManager({ trips }: { trips: TripWithTotals[] }) {
         description={
           pendingDelete ? (
             <>
-              <span className="font-medium">{pendingDelete.name}</span> will be
-              removed.{" "}
-              {pendingDelete.expenseCount > 0 ? (
-                <>
-                  Its {pendingDelete.expenseCount}{" "}
-                  {pendingDelete.expenseCount === 1 ? "expense" : "expenses"} will
-                  be kept and moved out of the trip, so the team totals do not
-                  change.
-                </>
-              ) : (
-                <>It has no expenses.</>
-              )}{" "}
-              This cannot be undone.
+              <span className="font-medium">{pendingDelete.name}</span> and its{" "}
+              {pendingDelete.expenseCount}{" "}
+              {pendingDelete.expenseCount === 1 ? "expense" : "expenses"} will be
+              permanently deleted. This cannot be undone.
             </>
           ) : null
         }

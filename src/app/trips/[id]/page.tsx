@@ -1,21 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarRange, MapPin, Receipt } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { ExpenseTable } from "@/components/expense-table";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getSession } from "@/lib/auth";
+import { getCategoryMeta } from "@/lib/constants";
 import { getTripWithExpenses } from "@/lib/data";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { id } = await params;
   const result = await getTripWithExpenses(id);
 
@@ -46,89 +57,124 @@ export default async function TripDetailPage({ params }: PageProps) {
     <div className="flex min-h-dvh flex-col">
       <Navbar isAdmin={Boolean(session)} />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/trips"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
         >
           <ArrowLeft className="size-4" />
-          All trips
+          Trips
         </Link>
 
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <MapPin className="text-muted-foreground size-6 shrink-0" />
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {trip.name}
           </h1>
-          {trip.description && (
-            <p className="text-muted-foreground mt-1">{trip.description}</p>
-          )}
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            {trip.description || "No description"}
+            {range && <> · {range}</>}
+          </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="gap-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                Total Spent
-              </CardTitle>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400">
-                <Receipt className="size-5" />
-              </span>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold tracking-tight tabular-nums lg:text-3xl">
-                {formatCurrency(trip.totalSpent)}
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Across {trip.expenseCount}{" "}
-                {trip.expenseCount === 1 ? "expense" : "expenses"}
-              </p>
-            </CardContent>
-          </Card>
+        <dl className="bg-card grid divide-y rounded-lg border sm:grid-cols-3 sm:divide-y-0">
+          <div className="px-5 py-4 sm:border-r">
+            <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Total Received
+            </dt>
+            <dd className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">
+              {formatCurrency(trip.received)}
+            </dd>
+          </div>
+          <div className="px-5 py-4 sm:border-r">
+            <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Total Spent
+            </dt>
+            <dd className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">
+              {formatCurrency(trip.totalSpent)}
+            </dd>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {trip.expenseCount}{" "}
+              {trip.expenseCount === 1 ? "expense" : "expenses"}
+            </p>
+          </div>
+          <div className="px-5 py-4">
+            <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Balance
+            </dt>
+            <dd
+              className={cn(
+                "mt-1.5 text-2xl font-semibold tracking-tight tabular-nums",
+                trip.balance < 0 && "text-destructive",
+              )}
+            >
+              {formatCurrency(trip.balance)}
+            </dd>
+          </div>
+        </dl>
 
-          <Card className="gap-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                Expenses
-              </CardTitle>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400">
-                <Receipt className="size-5" />
-              </span>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold tracking-tight tabular-nums lg:text-3xl">
-                {trip.expenseCount}
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Recorded for this trip
-              </p>
-            </CardContent>
-          </Card>
+        <Card className="gap-0 py-0">
+          <CardContent className="p-0">
+            <div className="border-b px-4 py-3">
+              <h2 className="text-sm font-medium">Expenses</h2>
+            </div>
 
-          <Card className="gap-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                Dates
-              </CardTitle>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400">
-                <CalendarRange className="size-5" />
-              </span>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-semibold tracking-tight">
-                {range ?? "Not set"}
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs">Trip schedule</p>
-            </CardContent>
-          </Card>
-        </div>
+            {expenses.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <p className="font-medium">No expenses yet</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Nothing has been spent on this trip so far.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="min-w-[7rem]">Date</TableHead>
+                      <TableHead className="min-w-[10rem]">Expense</TableHead>
+                      <TableHead className="min-w-[8rem]">Category</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expenses.map((expense) => {
+                      const meta = getCategoryMeta(expense.category);
+                      const Icon = meta.icon;
 
-        {/* The trip column is redundant here — every row is this trip. */}
-        <ExpenseTable
-          expenses={expenses}
-          showTripColumn={false}
-          title={`Expenses for ${trip.name}`}
-        />
+                      return (
+                        <TableRow key={expense.id}>
+                          <TableCell className="text-muted-foreground text-sm whitespace-nowrap tabular-nums">
+                            {formatDate(expense.date)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">{expense.title}</span>
+                            {expense.description && (
+                              <p className="text-muted-foreground line-clamp-1 text-xs">
+                                {expense.description}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={cn("gap-1 font-normal", meta.className)}
+                            >
+                              <Icon className="size-3" />
+                              {expense.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium tabular-nums whitespace-nowrap">
+                            {formatCurrency(expense.amount)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       <Footer />
