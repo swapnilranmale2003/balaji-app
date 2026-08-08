@@ -135,7 +135,8 @@ openssl rand -base64 32
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Start the development server |
+| `npm run dev` | Start the development server on port 3000 |
+| `npm run dev:clean` | Free port 3000, clear `.next`, then start |
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
 | `npm run lint` | ESLint |
@@ -144,6 +145,29 @@ openssl rand -base64 32
 | `npm run db:deploy` | Apply existing migrations (production) |
 | `npm run db:seed` | Clear the database (creates no sample data) |
 | `npm run db:studio` | Browse the database in Prisma Studio |
+
+---
+
+## Troubleshooting
+
+**`UnrecognizedActionError` or `ChunkLoadError` on a page that used to work.**
+
+The browser is holding a page from an older build whose Server Action IDs no
+longer exist on the server. It is always a stale build, never a code fault.
+
+```bash
+npm run dev:clean
+```
+
+Then hard-refresh the browser (Ctrl+Shift+R).
+
+Check the port in the address bar first. `npm run dev` is pinned to 3000; if a
+tab is on 3001, it is talking to a server from an earlier session. Close it.
+
+```bash
+fuser 3000/tcp    # what is holding the port
+fuser -k 3000/tcp # stop it
+```
 
 ---
 
